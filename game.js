@@ -40,8 +40,10 @@ let chickenBoxHelper;
 function init(){
 
     //lights
+    //ambient light
     const ambientLight = new THREE.AmbientLight(0xffffff,0.7)
     scene.add(ambientLight)
+    //directional light lightning from left to the middle of the game for correct shadowing
     const directionalLight = new THREE.DirectionalLight(0xffffff,3);
     directionalLight.position.set(5,6,-4)
     const target = new THREE.Object3D();
