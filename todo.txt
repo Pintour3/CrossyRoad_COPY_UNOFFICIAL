@@ -1,0 +1,5 @@
+à faire : 
+--> generation procédurale du terrain au fur et a mesure qu'on avance (que de l'herbe pour le moment)
+--> règler la camera correctement 
+--> remplir les cotés de la scene et ajouter objets et ombres --> generer les arbres sur les cotés
+--> règler correctement la lumière 

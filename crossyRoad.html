@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    
+    <meta charset="utf-8">
+    <title>My first three.js app</title>
+    <style>
+      body { margin: 0; }
+      
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  </head>
+  <body>
+    <button style="position: absolute;" width="20px" height="20px" onclick="">top</button>
+    <script type="importmap">
+        {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@v0.174.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.174.0/examples/jsm/"
+        }
+        }
+    </script>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
+    
