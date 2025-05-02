@@ -5,7 +5,7 @@ import { CSS2DRenderer,CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.
 //scene and camera
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(65,window.innerWidth/window.innerHeight,0.1,1000)
-camera.position.set(-2.2,5,4.3)
+camera.position.set(3.2,5,4.3)
 
 //3D loader
 const loader = new GLTFLoader();
@@ -33,6 +33,9 @@ let map = [
         [1,1,1,1,1,1,1,1,1],
         [1,1,1,1,1,1,1,1,1],
         [1,1,1,1,1,1,1,1,1],
+        [1,1,1,1,1,1,1,1,1],
+        [1,1,1,1,1,1,1,1,1],
+        [1,1,1,1,1,1,1,1,1],
     ]
 let chicken;
 let chickenRAW
@@ -45,9 +48,9 @@ function init(){
     scene.add(ambientLight)
     //directional light lightning from left to the middle of the game for correct shadowing
     const directionalLight = new THREE.DirectionalLight(0xffffff,3);
-    directionalLight.position.set(5,6,-4)
+    directionalLight.position.set(10,6,-4)
     const target = new THREE.Object3D();
-    target.position.set(5,1,1) 
+    target.position.set(10,1,1) 
     scene.add(target)
     directionalLight.target = target
     directionalLight.castShadow = true;
@@ -151,6 +154,25 @@ function init(){
                 removeBlock(length,0,index)
             ))
     }
+    function shiftMap(){
+        //récuperer l'index de la liste a supprimer
+        //vider cet liste pour qu'elle soit vide 
+        //envoyer a remove block la longueur a supprimer et l'index
+        for (let index = 0; index < map.length; index++) {
+            let list = map[index];
+            if (list.length !== 0) {
+                map[index] = []
+                console.log(map)
+                list.forEach((obj,index2)=>{
+                    removeBlock(index,0,index2)
+                })
+                
+                break; 
+            }
+        }
+
+        
+    }
     drawMap()
     drawSide()
     //player : chicken ?
@@ -172,7 +194,7 @@ function init(){
         chicken.add(chickenRAW)
         //init pos
         
-        chicken.position.set(0,.25/2,(map[0].length-1)/2)
+        chicken.position.set(5,.25/2,(map[0].length-1)/2)
         //axe helper of the chicken
         
         //getting the half size of the box to allign to the floor cuz pivot is center of the chicken
@@ -202,155 +224,66 @@ function init(){
     //movements
     document.addEventListener("keydown",(event)=>{
         let key = event.key
+        //if he's currently moving, dont do anything
         if (isMooving) return;
+        //if it's not, then tell it is mooving
         isMooving = true
+        //configuring a timeline where animation could launch in chain
         const tl = gsap.timeline({
+            //and as a callback at the end
             onComplete:()=>{
+                //reducing his size with a yoyo to make him compress and decompress
+                gsap.to(chicken.scale,{y:0.8,yoyo: true,repeat:1,duration:0.05,ease:"power1.inOut"})
+                //and tell you can move again
                 isMooving = false 
             }
         })
-        
+        //movements logic
         switch(key) {
-            case "ArrowRight":
-                //jump
-                tl.to(chicken.position,{
-                    y:chicken.position.y + 0.5,
-                    duration:0.1,
-                    ease:"power1.out",
-                })
-                currentRotation = shortestRotation(currentRotation,0)
-                tl.to(chicken.rotation,{
-                    y: currentRotation,
-                    duration: 0.2,
-                    ease:"power1.inOut"
-                },"<")
-                //moove
-                tl.to(chicken.position,{
-                    z:chicken.position.z + 1,
-                    duration:0.2,
-                    ease:"power1.inOut",
-                },"<")
-                //goback to the floor
-                .to(chicken.position,{
-                    y:chicken.position.y,
-                    duration:0.1,
-                    ease:"power1.in"
-                },"-=0.1")
-                tl.to(chicken.scale,{
-                    y:0.8,
-                    yoyo: true,
-                    repeat:1,
-                    duration:0.1,
-                    ease:"power1.inOut"
-                },"-=0.1")
-                break
-            case "ArrowLeft":   
-                tl.to(chicken.position,{
-                    y:chicken.position.y + 0.5,
-                    duration:0.1,
-                    ease:"power1.out",
-                })
-                currentRotation = shortestRotation(currentRotation,Math.PI)
-                tl.to(chicken.rotation,{
-                    y: currentRotation,
-                    duration: 0.2,
-                    ease:"power1.inOut"
-                },"<")
-                tl.to(chicken.position,{
-                    z:chicken.position.z - 1,
-                    duration:0.2,
-                    ease:"power1.inOut",
-                },"<")
-                .to(chicken.position,{
-                    y:chicken.position.y,
-                    duration:0.1,
-                    ease:"power1.in"
-                },"-=0.1")
-                tl.to(chicken.scale,{
-                    y:0.8,
-                    yoyo: true,
-                    repeat:1,
-                    duration:0.1,
-                    ease:"power1.inOut"
-                },"-=0.1")
-                break
             //space and ArrowUp does the same thing
             case " ":
             case "ArrowUp":
-                tl.to(chicken.position,{
-                    y:chicken.position.y + 0.5,
-                    duration:0.1,
-                    ease:"power1.out",
-                })
+                //setting the correct rotation
                 currentRotation = shortestRotation(currentRotation,Math.PI * 0.5)
-                tl.to(chicken.rotation,{
-                    y: currentRotation,
-                    duration: 0.2,
-                    ease:"power1.inOut"
-                },"<")
-                tl.to(chicken.position,{
-                    x:chicken.position.x + 1,
-                    duration:0.2,
-                    ease:"power1.inOut",
-                },"<")
-                .to(chicken.position,{
-                    y:chicken.position.y,
-                    duration:0.1,
-                    ease:"power1.in"
-                },"-=0.1")
-                tl.to(chicken.scale,{
-                    y:0.8,
-                    yoyo: true,
-                    repeat:1,
-                    duration:0.1,
-                    ease:"power1.inOut"
-                },"-=0.1")
-                
-                gsap.to(camera.position,{
-                    x:camera.position.x + 1,
-                    duration:0.2,
-                    ease:"power1.out"
-                })
-                
+                //setting the little bounce
+                tl.to(chicken.position,{y:chicken.position.y + 0.5,duration:0.1,ease:"power1.out",})
+                .to(chicken.rotation,{y: currentRotation,duration: 0.2,ease:"power1.inOut"},"<")
+                .to(chicken.position,{x:chicken.position.x + 1,duration:0.1,ease:"power1.inOut",},"<")
+                .to(chicken.position,{y:chicken.position.y,duration:0.1,ease:"power1.in",},"-=0.15")
+                //moving the camera to follow the chiken
+                gsap.to(camera.position,{x:camera.position.x + 1,duration:0.2,ease:"power1.out"})
+                //moving the light and the light target to reduce performance cost 
+                directionalLight.position.x ++
+                target.position.x ++
+                shiftMap()
                 break
             case "ArrowDown": 
-                tl.to(chicken.position,{
-                    y:chicken.position.y + 0.5,
-                    duration:0.1,
-                    ease:"power1.out",
-                })
                 currentRotation = shortestRotation(currentRotation,Math.PI * -0.5)
-                tl.to(chicken.rotation,{
-                    y: currentRotation,
-                    duration: 0.2,
-                    ease:"power1.inOut"
-                },"<")
-                tl.to(chicken.position,{
-                    x:chicken.position.x - 1,
-                    duration:0.2,
-                    ease:"power1.inOut",
-                },"<")
-                .to(chicken.position,{
-                    y:chicken.position.y,
-                    duration:0.1,
-                    ease:"power1.in"
-                },"-=0.1")
-                tl.to(chicken.scale,{
-                    y:0.8,
-                    yoyo: true,
-                    repeat:1,
-                    duration:0.1,
-                    ease:"power1.inOut"
-                },"-=0.1")
-                gsap.to(camera.position,{
-                    x:camera.position.x - 1,
-                    duration:0.2,
-                    ease:"power1.out"
-                })
+                tl.to(chicken.position,{y:chicken.position.y + 0.5,duration:0.1,ease:"power1.out",})
+                .to(chicken.rotation,{y: currentRotation,duration: 0.2,ease:"power1.inOut"},"<")
+                .to(chicken.position,{x:chicken.position.x - 1,duration:0.1,ease:"power1.inOut",},"<")
+                .to(chicken.position,{y:chicken.position.y,duration:0.1,ease:"power1.in",},"-=0.15")
+                gsap.to(camera.position,{x:camera.position.x - 1,duration:0.2,ease:"power1.out"})
+                directionalLight.position.x --
+                target.position.x --
+                popMap()
                 break
-                case "Enter":
-                    popMap()
-                    break
+            case "ArrowRight":
+                currentRotation = shortestRotation(currentRotation,0)
+                tl.to(chicken.position,{y:chicken.position.y + 0.5,duration:0.1,ease:"power1.out",})
+                .to(chicken.rotation,{y: currentRotation,duration: 0.2,ease:"power1.inOut"},"<")
+                .to(chicken.position,{z:chicken.position.z + 1,duration:0.1,ease:"power1.inOut",},"<")
+                .to(chicken.position,{y:chicken.position.y,duration:0.1,ease:"power1.in",},"-=0.15")
+                gsap.to(camera.position,{z:camera.position.z + 1,duration:1,ease:"power1.out"})
+                break
+            case "ArrowLeft":   
+                currentRotation = shortestRotation(currentRotation,Math.PI )
+                tl.to(chicken.position,{y:chicken.position.y + 0.5,duration:0.1,ease:"power1.out",})
+                .to(chicken.rotation,{y: currentRotation,duration: 0.2,ease:"power1.inOut"},"<")
+                .to(chicken.position,{z:chicken.position.z - 1,duration:0.1,ease:"power1.inOut",},"<")
+                .to(chicken.position,{y:chicken.position.y,duration:0.1,ease:"power1.in",},"-=0.15")
+                gsap.to(camera.position,{z:camera.position.z - 1,duration:1,ease:"power1.out"})
+                break
         }
     })
 
