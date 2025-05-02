@@ -65,8 +65,7 @@ function init(){
     //draw Trees with variable size with coords parameters
     function drawTree(x,y,z){
         const scaleY = Math.random()*0.1 + 0.2
-        console.log(scaleY)
-        loader.load("tree.gltf",gltf=>{
+        loader.load("/textures/tree.gltf",gltf=>{
             const tree = gltf.scene
             tree.scale.set(0.3,scaleY,0.3)
             tree.position.set(x,y,z)
@@ -156,7 +155,7 @@ function init(){
     drawSide()
     //player : chicken ?
     chicken = new THREE.Object3D()
-    loader.load("chicken.gltf",(gltf)=>{
+    loader.load("/textures/chicken.gltf",(gltf)=>{
         chickenRAW = gltf.scene
         chickenRAW.traverse(child=>{
             if (child.isMesh){
