@@ -255,7 +255,7 @@ function init(){
                 //moving the light and the light target to reduce performance cost 
                 directionalLight.position.x ++
                 target.position.x ++
-                shiftMap()
+                //shiftMap()
                 break
             case "ArrowDown": 
                 currentRotation = shortestRotation(currentRotation,Math.PI * -0.5)
@@ -266,7 +266,7 @@ function init(){
                 gsap.to(camera.position,{x:camera.position.x - 1,duration:0.2,ease:"power1.out"})
                 directionalLight.position.x --
                 target.position.x --
-                popMap()
+                //popMap()
                 break
             case "ArrowRight":
                 currentRotation = shortestRotation(currentRotation,0)
