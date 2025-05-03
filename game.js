@@ -1,11 +1,10 @@
 import * as THREE from "three";
 import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 import { CSS2DRenderer,CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-
-//scene and camera
+import Stats from 'three/addons/libs/stats.module.js';
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(65,window.innerWidth/window.innerHeight,0.1,1000)
-camera.position.set(3.2,5,4.3)
+camera.position.set(4.2,5,4.3)
 
 //3D loader
 const loader = new GLTFLoader();
@@ -18,6 +17,10 @@ renderer.setSize(window.innerWidth,window.innerHeight)
 document.body.appendChild(renderer.domElement)
 renderer.setAnimationLoop(animate);
 
+//stats 
+var stats = new Stats();
+
+document.body.appendChild( stats.dom );
 
 //init
 let map = [
@@ -48,9 +51,9 @@ function init(){
     scene.add(ambientLight)
     //directional light lightning from left to the middle of the game for correct shadowing
     const directionalLight = new THREE.DirectionalLight(0xffffff,3);
-    directionalLight.position.set(10,6,-4)
+    directionalLight.position.set(11,6,-4)
     const target = new THREE.Object3D();
-    target.position.set(10,1,1) 
+    target.position.set(11,1,1) 
     scene.add(target)
     directionalLight.target = target
     directionalLight.castShadow = true;
@@ -72,6 +75,7 @@ function init(){
             const tree = gltf.scene
             tree.scale.set(0.3,scaleY,0.3)
             tree.position.set(x,y,z)
+            tree.userData.type = "tree"
             tree.traverse(child=>{
                 if (child.isMesh) {
                     child.receiveShadow = true
@@ -90,7 +94,7 @@ function init(){
             let type = lines[0]
             switch(type){
                 case 1:
-                    for (let k = 0; k < 3;k++) {
+                    for (let k = 0; k < 5;k++) {
                         grassBlock(index,0, -(k + 1),0x8EC045)
                         grassBlock(index,0,lines.length + k,0x8EC045)
                         drawTree(index,0,lines.length + k)
@@ -132,7 +136,8 @@ function init(){
     function removeBlock(x,y,z){
         const objToRemove = []
         scene.children.forEach(child=>{
-            if (child instanceof THREE.Mesh){
+            //removing platforms
+            if (child instanceof THREE.Mesh || child.userData.type === "tree"){
                 const pos = child.position
                 if (
                     (pos.x === x && pos.y === y && pos.z === z) ||
@@ -146,32 +151,53 @@ function init(){
             scene.remove(mesh)
         })
     }
-    //kick the last line of the map tab
-    function popMap(){
-            var list = map.pop()
-            var length = map.length
-            list.forEach((obj,index)=>(
-                removeBlock(length,0,index)
-            ))
+
+    //build new terrain as the chicken is walking
+    function updateMap(){
+        //if chicken is reaching the farest point
+        if (chicken.position.x > playerLastPosition) {
+            playerLastPosition = chicken.position.x
+            //deleting the last line of blocs
+            shiftMap()
+            //adding a line to the top of the path
+            let list = [1,1,1,1,1,1,1,1,1]
+            map.push(list)
+            list.forEach((elt,index)=>{
+                grassBlock(map.length-1,0,index,0xBDF566)
+            })
+            //now generate the sides of the map
+            for (let k = 0;k<5;k++){
+                grassBlock(map.length-1,0,-(1 + k),0x8EC045)
+                grassBlock(map.length-1,0,list.length + k,0x8EC045)
+                drawTree(map.length-1,0,-(1 + k))
+                drawTree(map.length-1,0,list.length + k)
+            }
+           
+            
+        }
     }
+    //delete the map behind the chicken to avoid performance issues
     function shiftMap(){
-        //récuperer l'index de la liste a supprimer
-        //vider cet liste pour qu'elle soit vide 
-        //envoyer a remove block la longueur a supprimer et l'index
+        //we scan the list
         for (let index = 0; index < map.length; index++) {
+            //we take an element
             let list = map[index];
+            //if this element is not equal to 0
             if (list.length !== 0) {
+                //we empty this list
                 map[index] = []
-                console.log(map)
+                //and for each element we remove the block
                 list.forEach((obj,index2)=>{
                     removeBlock(index,0,index2)
                 })
+                for (let k = 0; k < 5;k++) {
+                    removeBlock(index,0,-(1+k))
+                    removeBlock(index,0,list.length+k)
+                }
                 
                 break; 
             }
         }
-
-        
     }
     drawMap()
     drawSide()
@@ -194,7 +220,7 @@ function init(){
         chicken.add(chickenRAW)
         //init pos
         
-        chicken.position.set(5,.25/2,(map[0].length-1)/2)
+        chicken.position.set(6,.25/2,(map[0].length-1)/2)
         //axe helper of the chicken
         
         //getting the half size of the box to allign to the floor cuz pivot is center of the chicken
@@ -222,6 +248,7 @@ function init(){
     }
 
     //movements
+    let playerLastPosition = chicken.position.x
     document.addEventListener("keydown",(event)=>{
         let key = event.key
         //if he's currently moving, dont do anything
@@ -255,7 +282,7 @@ function init(){
                 //moving the light and the light target to reduce performance cost 
                 directionalLight.position.x ++
                 target.position.x ++
-                //shiftMap()
+                updateMap()
                 break
             case "ArrowDown": 
                 currentRotation = shortestRotation(currentRotation,Math.PI * -0.5)
@@ -266,7 +293,6 @@ function init(){
                 gsap.to(camera.position,{x:camera.position.x - 1,duration:0.2,ease:"power1.out"})
                 directionalLight.position.x --
                 target.position.x --
-                //popMap()
                 break
             case "ArrowRight":
                 currentRotation = shortestRotation(currentRotation,0)
@@ -295,9 +321,10 @@ function init(){
 //animation
 init()
 function animate(){
+    stats.begin()
     if (chickenBoxHelper) {
         chickenBoxHelper.update()
     }
     renderer.render(scene,camera)
-    
+    stats.end()
 }
