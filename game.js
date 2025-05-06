@@ -274,6 +274,7 @@ function init(){
         switch(key) {
             //space and ArrowUp does the same thing
             case " ":
+            case "w":
             case "ArrowUp":
                 //setting the correct rotation
                 currentRotation = shortestRotation(currentRotation,Math.PI * 0.5)
@@ -289,6 +290,7 @@ function init(){
                 target.position.x ++
                 updateMap()
                 break
+            case "s":
             case "ArrowDown": 
                 currentRotation = shortestRotation(currentRotation,Math.PI * -0.5)
                 tl.to(chicken.position,{y:chicken.position.y + 0.5,duration:0.1,ease:"power1.out",})
@@ -299,6 +301,7 @@ function init(){
                 directionalLight.position.x --
                 target.position.x --
                 break
+            case "d":
             case "ArrowRight":
                 currentRotation = shortestRotation(currentRotation,0)
                 tl.to(chicken.position,{y:chicken.position.y + 0.5,duration:0.1,ease:"power1.out",})
@@ -307,6 +310,7 @@ function init(){
                 .to(chicken.position,{y:chicken.position.y,duration:0.1,ease:"power1.in",},"-=0.15")
                 gsap.to(camera.position,{z:camera.position.z + 1,duration:1,ease:"power1.out"})
                 break
+            case "a":
             case "ArrowLeft":   
                 currentRotation = shortestRotation(currentRotation,Math.PI )
                 tl.to(chicken.position,{y:chicken.position.y + 0.5,duration:0.1,ease:"power1.out",})
