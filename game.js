@@ -22,10 +22,9 @@ var stats = new Stats();
 
 document.body.appendChild( stats.dom );
 
+let objects = new Map()
 //init
 let map = [
-        [1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1],
         [1,1,1,1,1,1,1,1,1],
         [1,1,1,1,1,1,1,1,1],
         [1,1,1,1,1,1,1,1,1],
@@ -70,6 +69,7 @@ function init(){
     scene.add(helper)
     //draw Trees with variable size with coords parameters
     function drawTree(x,y,z){
+        const key = `${x},${y},${z}`
         const scaleY = Math.random()*0.1 + 0.2
         loader.load("/textures/tree.gltf",gltf=>{
             const tree = gltf.scene
@@ -85,6 +85,11 @@ function init(){
                     child.material.side = THREE.FrontSide
                 }
             }) 
+            if (!objects.has(key)) {
+                objects.set(key, [])
+            }
+        
+            objects.get(key).push(tree)
             scene.add(tree)
         })
     }
@@ -108,6 +113,7 @@ function init(){
 
     //grassblock func
     function grassBlock(x,y,z,color) {
+        const key = `${x},${y},${z}`
         const grassGeo = new THREE.BoxGeometry(1,0.25,1)
         const dirtGeo = new THREE.BoxGeometry(1,0.25,1)
         
@@ -120,6 +126,12 @@ function init(){
         dirtBlock.receiveShadow = false
         grassBlock.position.set(x,y,z)
         dirtBlock.position.set(x,y-0.25,z)
+        
+        if (!objects.has(key)) {
+            objects.set(key, [])
+        }
+        objects.get(key).push(grassBlock)
+        objects.get(key).push(dirtBlock)
         scene.add(grassBlock)
         scene.add(dirtBlock)
     }
@@ -134,24 +146,22 @@ function init(){
     }
     //completely delete a block from the scene
     function removeBlock(x,y,z){
-        const objToRemove = []
-        scene.children.forEach(child=>{
-            //removing platforms
-            if (child instanceof THREE.Mesh || child.userData.type === "tree"){
-                const pos = child.position
-                if (
-                    (pos.x === x && pos.y === y && pos.z === z) ||
-                    (pos.x === x && pos.y === y - 0.25 && pos.z === z)
-                ) {
-                    objToRemove.push(child);
+        const key = `${x},${y},${z}`
+        if (objects.has(key)){
+                const meshes = objects.get(key)
+                for (const mesh of meshes) {
+                    scene.remove(mesh)
+                    mesh.geometry?.dispose()
+                    if (Array.isArray(mesh.material)){
+                        for (const mat of mesh.material)
+                            mat.dispose()
+                    } else {
+                        mesh.material?.dispose()
+                    }
                 }
+                objects.delete(key)   
             }
-        });
-        objToRemove.forEach((mesh)=>{
-            scene.remove(mesh)
-        })
     }
-
     //build new terrain as the chicken is walking
     function updateMap(){
         //if chicken is reaching the farest point
@@ -186,15 +196,10 @@ function init(){
             if (list.length !== 0) {
                 //we empty this list
                 map[index] = []
-                //and for each element we remove the block
-                list.forEach((obj,index2)=>{
-                    removeBlock(index,0,index2)
-                })
-                for (let k = 0; k < 5;k++) {
-                    removeBlock(index,0,-(1+k))
-                    removeBlock(index,0,list.length+k)
+                //remove the line
+                for (let k = 0; k < 19;k++) {
+                    removeBlock(index,0,-5+k)
                 }
-                
                 break; 
             }
         }
