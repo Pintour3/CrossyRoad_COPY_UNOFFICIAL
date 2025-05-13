@@ -175,11 +175,11 @@ function init(){
     let material;
     function random() {
         var random = Math.random().toFixed(2)
-            if (random <= 0.5) {
+            if (random <= 0.4) {
                 material = 1
-            } else if (random > 0.5 && random <= 0.85) {
+            } else if (random > 0.4 && random <= 0.65) {
                 material = 2
-            } else if (random > 0.85 && random <= 0.95) {
+            } else if (random > 0.65 && random <= 0.85) {
                 material = 3 
             } else {
                 material = 4
@@ -187,6 +187,7 @@ function init(){
         return material
     }
     //build new terrain as the chicken is walking
+    let currentChain = [false,0]
     function updateMap(){
         //if chicken is reaching the furthest point
         if (chicken.position.x > playerLastPosition) {
@@ -196,28 +197,41 @@ function init(){
             //adding a line to the top of the path
             //rules for the procedural generation
             //max 5 identic path in a row and minimum 2 in a row
-            //initial probability : 50% grass, 35% road, 10% river, 5% train --> update if needed
+            //initial probability : 40% grass, 25% road, 20% river, 15% train --> update if needed
             //grass = 1, road = 2, river = 3, train = 4
             let lastPath = []
             for (let k = 5; k > 0;k --) {
                 //list of the previous path
                 lastPath.push((map[map.length - k][0]))
             }
-            function isTheSame(elt) {
-                return elt == lastPath[0]
-            }
-            //in case the path is 5 block length (the maximum)
-            if (lastPath.every(isTheSame)){
+            console.log(lastPath)
+            if(!currentChain[0]) {
                 material = random()
-                while (material == lastPath[lastPath.length-1]) {
+                currentChain = [true,1]
+                while (material == lastPath[lastPath.length-1]){
                     material = random()
-                    console.log("number was the same")
                 }
-                
-            }
-            
-            
+            } else {
+                //probability 90% --> 70% --> 50% --> 30%
+                let length = currentChain[1]
+                if (length !== 5) {
+                    material = random()
+                    let randomNbr = Math.random().toFixed(2)
+                    if (randomNbr <= (0.9 - (0.2*length))){
+                        material = lastPath[lastPath.length-1]
+                        currentChain = [true,currentChain[1] += 1]
+                    } else {
+                        currentChain = [false,0]
+                    }
+                } else {
+                    material = random()
+                    currentChain = [false,0]
+                    while (material == lastPath[lastPath.length-1]){
+                        material = random()
+                    }
+                }
 
+            }
             let middleColor, sideColor;
             switch(material){
                 case 1:
@@ -402,10 +416,6 @@ function init(){
         }
     })
 
-
-    
-   
-    
 }   
 //animation
 init()
