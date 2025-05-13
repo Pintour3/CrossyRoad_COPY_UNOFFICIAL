@@ -172,7 +172,20 @@ function init(){
                 objects.delete(key)   
             }
     }
-    
+    let material;
+    function random() {
+        var random = Math.random().toFixed(2)
+            if (random <= 0.5) {
+                material = 1
+            } else if (random > 0.5 && random <= 0.85) {
+                material = 2
+            } else if (random > 0.85 && random <= 0.95) {
+                material = 3 
+            } else {
+                material = 4
+            }
+        return material
+    }
     //build new terrain as the chicken is walking
     function updateMap(){
         //if chicken is reaching the furthest point
@@ -183,45 +196,55 @@ function init(){
             //adding a line to the top of the path
             //rules for the procedural generation
             //max 5 identic path in a row and minimum 2 in a row
-            //initial probability : 40% grass, 30% road, 20% river, 10% train --> update if needed
+            //initial probability : 50% grass, 35% road, 10% river, 5% train --> update if needed
             //grass = 1, road = 2, river = 3, train = 4
-            let material;
             let lastPath = []
             for (let k = 5; k > 0;k --) {
                 //list of the previous path
-                lastPath.push((map[(map.length - 1)-k][0]))
+                lastPath.push((map[map.length - k][0]))
             }
             function isTheSame(elt) {
                 return elt == lastPath[0]
             }
-                
+            //in case the path is 5 block length (the maximum)
             if (lastPath.every(isTheSame)){
-                console.log("same")
+                material = random()
+                while (material == lastPath[lastPath.length-1]) {
+                    material = random()
+                    console.log("number was the same")
+                }
+                
             }
-            var random = Math.random().toFixed(2)
-            if (random <= 0.4) {
-                material = 1
-            } else if (random > 0.4 && random <= 0.7) {
-                material = 2
-            } else if (random > 0.7 && random <= 0.9) {
-                material = 3 
-            } else {
-                material = 4
-            }
+            
+            
+
             let middleColor, sideColor;
             switch(material){
                 case 1:
                     //grass
                     middleColor = 0xBDF566
                     sideColor = 0x8EC045
+                    break
                 case 2:
                     //road 
                     middleColor = 0x535864
                     sideColor = 0x49505B
                     //here lets try to import a road texture 
+                    break
+                case 3:
+                    //water 
+                    middleColor = 0x82F4FF
+                    sideColor = 0x62D8FF
+                    break
+                case 4:
+                    //train 
+                    middleColor = 0x121212
+                    sideColor = 0x000000
+                    break
+
             }
-            
-            const list = [1,1,1,1,1,1,1,1,1]
+            let list = [0,0,0,0,0,0,0,0,0]
+            list = list.map(() => material)
             map.push(list)
             list.forEach((elt,index)=>{
                 grassBlock(map.length-1,0,index,middleColor)
@@ -237,6 +260,7 @@ function init(){
             
         }
     }
+    
     //delete the map behind the chicken to avoid performance issues
     function shiftMap(){
         //we scan the list
