@@ -5,7 +5,7 @@ import Stats from 'three/addons/libs/stats.module.js';
 const scene = new THREE.Scene();
 //camera
 const camera = new THREE.PerspectiveCamera(65,window.innerWidth/window.innerHeight,0.1,1000)
-camera.position.set(4.2,5,4.3)
+camera.position.set(4.2,4.2,4.35)
 
 //3D loader
 const loader = new GLTFLoader();
@@ -25,10 +25,8 @@ document.body.appendChild( stats.dom );
 
 let objects = new Map()
 //init
-const grassGeo = new THREE.BoxGeometry(1,0.125,1)
-const dirtGeo = new THREE.BoxGeometry(1,0.125,1)
-const terrainTypes = ["grass","river","road","train"]
 let map = [
+        [1,1,1,1,1,1,1,1,1],
         [1,1,1,1,1,1,1,1,1],
         [1,1,1,1,1,1,1,1,1],
         [1,1,1,1,1,1,1,1,1],
@@ -54,9 +52,9 @@ function init(){
     scene.add(ambientLight)
     //directional light lightning from left to the middle of the game for correct shadowing
     const directionalLight = new THREE.DirectionalLight(0xffffff,3);
-    directionalLight.position.set(11,6,-4)
+    directionalLight.position.set(10,6,-4)
     const target = new THREE.Object3D();
-    target.position.set(11,1,1) 
+    target.position.set(10,1,1) 
     scene.add(target)
     directionalLight.target = target
     directionalLight.castShadow = true;
@@ -75,64 +73,86 @@ function init(){
     */
     //draw Trees with variable size with coords parameters
     function drawTree(x,y,z){
-        const key = `${x},${y},${z}`
-        const scaleY = Math.random()*0.1 + 0.2
-        loader.load("/textures/tree.gltf",gltf=>{
-            const tree = gltf.scene
-            tree.scale.set(0.3,scaleY,0.3)
-            tree.position.set(x,y,z)
-            tree.userData.type = "tree"
-            tree.traverse(child=>{
-                if (child.isMesh) {
-                    child.receiveShadow = true
-                    child.castShadow = true
+        //70 % chances of spawn to increase performance (very performance cost)
+        if (Math.random().toFixed(2) <= 0.7) {
+            const key = `${x},${y},${z}`
+            const scaleY = Math.random()*0.1 + 0.2
+            loader.load("/textures/tree.gltf",gltf=>{
+                const tree = gltf.scene
+                tree.scale.set(0.3,scaleY,0.3)
+                tree.position.set(x,y,z)
+                tree.userData.type = "tree"
+                tree.traverse(child=>{
+                    if (child.isMesh) {
+                        child.receiveShadow = true
+                        child.castShadow = true
+                    }
+                    if (child.material) {
+                        child.material.side = THREE.FrontSide
+                    }
+                }) 
+                //if there isn't objects at this position
+                if (!objects.has(key)) {
+                    //create an id in the map
+                    objects.set(key, [])
                 }
-                if (child.material) {
-                    child.material.side = THREE.FrontSide
-                }
-            }) 
-            //if there isn't objects at this position
-            if (!objects.has(key)) {
-                //create an id in the map
-                objects.set(key, [])
-            }
-            //and add the tree to this map id (same for all the others)
-            objects.get(key).push(tree)
-            scene.add(tree)
-        })
+                //and add the tree to this map id (same for all the others)
+                objects.get(key).push(tree)
+                scene.add(tree)
+            })
+        }
     }
     
     
 
-    //grassblock func
-    function grassBlock(x,y,z,color) {
+    //drawBlock func
+    const blockGeo = new THREE.BoxGeometry(1,0.125,1)
+    const dirtGeo = new THREE.BoxGeometry(1,0.125,1)
+    let dirtBlock;
+    function drawBlock(x,y,z,color) {
         const key = `${x},${y},${z}`
-        
-        
-        const grass = new THREE.MeshStandardMaterial({color:color});
-        const dirt = new THREE.MeshBasicMaterial({color:0x403410});
-        
-        const grassBlock = new THREE.Mesh(grassGeo,grass)
-        const dirtBlock = new THREE.Mesh(dirtGeo,dirt)
-        grassBlock.receiveShadow = true
-        dirtBlock.receiveShadow = false
-        grassBlock.position.set(x,y,z)
-        dirtBlock.position.set(x,y-0.125,z)
-        
+        const blockTexture = new THREE.MeshStandardMaterial({color:color});
+        const mainBlock = new THREE.Mesh(blockGeo,blockTexture)
+        mainBlock.receiveShadow = true
+        switch (color){
+            case 0xBDF566:
+            case 0x8EC045:
+                const dirt = new THREE.MeshBasicMaterial({color:0x403410});
+                dirtBlock = new THREE.Mesh(dirtGeo,dirt)
+                dirtBlock.receiveShadow = false
+                mainBlock.position.set(x,y,z)
+                dirtBlock.position.set(x,y-0.125,z)
+                scene.add(dirtBlock)
+                break
+            case 0x535864:
+            case 0x49505B:
+                mainBlock.position.set(x,y-0.125,z)
+                break
+            case 0x82F4FF:
+            case 0x62D8FF:
+                mainBlock.position.set(x,y-0.25,z)
+                break
+            case 0x121212:
+            case 0x000000:
+                mainBlock.position.set(x,y-0.125,z)
+                break
+        }
+        scene.add(mainBlock)
+        //create key id if there is no objects at this position
         if (!objects.has(key)) {
             objects.set(key, [])
         }
-        objects.get(key).push(grassBlock)
+        //add object in map corresponding to the identic key
+        objects.get(key).push(mainBlock)
         objects.get(key).push(dirtBlock)
-        scene.add(grassBlock)
-        scene.add(dirtBlock)
+        
     }
     //initialise the map, drawn using the map list configuration
     function drawMap(){
         map.forEach((row,rowIndex)=>{
             row.forEach((col,colIndex)=>{
                 if (col == 1) {
-                    grassBlock(rowIndex,0,colIndex,0xBDF566)
+                    drawBlock(rowIndex,0,colIndex,0xBDF566)
                 }
             })
         })
@@ -144,8 +164,8 @@ function init(){
             switch(type){
                 case 1:
                     for (let k = 0; k < 19;k++) {
-                        grassBlock(index,0, -(k + 1),0x8EC045)
-                        grassBlock(index,0,lines.length + k,0x8EC045)
+                        drawBlock(index,0, -(k + 1),0x8EC045)
+                        drawBlock(index,0,lines.length + k,0x8EC045)
                         drawTree(index,0,lines.length + k)
                         drawTree(index,0,-(k + 1))
                     }
@@ -204,7 +224,6 @@ function init(){
                 //list of the previous path
                 lastPath.push((map[map.length - k][0]))
             }
-            console.log(lastPath)
             if(!currentChain[0]) {
                 material = random()
                 currentChain = [true,1]
@@ -261,19 +280,22 @@ function init(){
             list = list.map(() => material)
             map.push(list)
             list.forEach((elt,index)=>{
-                grassBlock(map.length-1,0,index,middleColor)
+                drawBlock(map.length-1,0,index,middleColor)
             })
             //now generate the sides of the map
-            for (let k = 0;k<5;k++){
-                grassBlock(map.length-1,0,-(1 + k),sideColor)
-                grassBlock(map.length-1,0,list.length + k,sideColor)
-                drawTree(map.length-1,0,-(1 + k))
-                drawTree(map.length-1,0,list.length + k)
+            for (let k = 0;k<6;k++){
+                drawBlock(map.length-1,0,-(1 + k),sideColor)
+                drawBlock(map.length-1,0,list.length + k,sideColor)
+                switch (material) {
+                    case 1:
+                        drawTree(map.length-1,0,-(1 + k))
+                        drawTree(map.length-1,0,list.length + k)
+                        break
+                }
+                    
+                }
             }
-           
-            
         }
-    }
     
     //delete the map behind the chicken to avoid performance issues
     function shiftMap(){
@@ -309,8 +331,8 @@ function init(){
             }
         })
         //relative position to the pivot
-        chickenRAW.position.set(0,0.2,-0.75)
-        chickenRAW.scale.set(0.4,0.4,0.4)
+        chickenRAW.position.set(0,0.2,-0.6)
+        chickenRAW.scale.set(0.3,0.3,0.3)
         chicken.add(chickenRAW)
         //init pos
         
@@ -327,7 +349,8 @@ function init(){
         chicken.rotation.y = Math.PI * 0.5
         //scene and debug
         //add if needed
-        /*chickenBoxHelper = new THREE.BoxHelper(chicken,0x00ff00);
+        /*
+        chickenBoxHelper = new THREE.BoxHelper(chicken,0x00ffFF);
         scene.add(chickenBoxHelper)
         */
         camera.lookAt(chicken.position)
@@ -399,7 +422,7 @@ function init(){
                     .to(chicken.rotation,{y: currentRotation,duration: 0.2,ease:"power1.inOut"},"<")
                     .to(chicken.position,{z:chicken.position.z + 1,duration:0.1,ease:"power1.inOut",},"<")
                     .to(chicken.position,{y:chicken.position.y,duration:0.1,ease:"power1.in",},"-=0.15")
-                    gsap.to(camera.position,{z:camera.position.z + 1,duration:1,ease:"power1.out"})
+                    gsap.to(camera.position,{z:camera.position.z + 0.4,duration:1,ease:"power1.out"})
                 }
                 break
             case "a":
@@ -410,7 +433,7 @@ function init(){
                     .to(chicken.rotation,{y: currentRotation,duration: 0.2,ease:"power1.inOut"},"<")
                     .to(chicken.position,{z:chicken.position.z - 1,duration:0.1,ease:"power1.inOut",},"<")
                     .to(chicken.position,{y:chicken.position.y,duration:0.1,ease:"power1.in",},"-=0.15")
-                    gsap.to(camera.position,{z:camera.position.z - 1,duration:1,ease:"power1.out"})
+                    gsap.to(camera.position,{z:camera.position.z - 0.4,duration:1,ease:"power1.out"})
                 }
                 break
         }
