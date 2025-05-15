@@ -73,15 +73,14 @@ function init(){
     */
     //draw Trees with variable size with coords parameters
     function drawTree(x,y,z){
-        //70 % chances of spawn to increase performance (very performance cost)
-        if (Math.random().toFixed(2) <= 0.7) {
+        //50 % chances of spawn to increase performance (very performance cost)
+        if (Math.random().toFixed(2) <= 0.5) {
             const key = `${x},${y},${z}`
             const scaleY = Math.random()*0.1 + 0.2
             loader.load("/textures/tree.gltf",gltf=>{
                 const tree = gltf.scene
                 tree.scale.set(0.3,scaleY,0.3)
                 tree.position.set(x,y,z)
-                tree.userData.type = "tree"
                 tree.traverse(child=>{
                     if (child.isMesh) {
                         child.receiveShadow = true
@@ -102,13 +101,53 @@ function init(){
             })
         }
     }
+    //rail function
+    function drawRail(x,y,z){
+        const key = `${x},${y},${z}`
+        loader.load("/textures/railway.gltf",(gltf)=>{
+            const rail = gltf.scene
+            rail.position.set(x,y,z )
+            rail.scale.set(0.4,0.7,0.5)
+            rail.traverse(child=>{
+                if (child.isMesh) {
+                    child.receiveShadow = true
+                    child.castShadow = false
+                }
+                if (child.material) {
+                    child.material.side = THREE.FrontSide
+                }
+            })
+            if (!objects.has(key)) {
+                    //create an id in the map
+                    objects.set(key, [])
+            
+            }
+            objects.get(key).push(rail)
+            scene.add(rail)
+        })
+    }
+    //drawLine func
+    const lineGeometry = new THREE.PlaneGeometry(0.15,1)
+    const lineMaterial = new THREE.MeshBasicMaterial({color:0x909090,side:THREE.DoubleSide})
+    function drawLine(x,y,z){
+        const key = `${x},${y},${z}`
+        const line = new THREE.Mesh(lineGeometry,lineMaterial)
+        line.position.set(x,y,z)
+        line.rotation.x = Math.PI/2
+        scene.add(line)
+        if (!objects.has(key)){
+            objects.set(key,[])
+        }
+        //add object in map corresponding to the identic key
+        objects.get(key).push(line)
+        
+    }
     
-    
-
     //drawBlock func
     const blockGeo = new THREE.BoxGeometry(1,0.125,1)
     const dirtGeo = new THREE.BoxGeometry(1,0.125,1)
     let dirtBlock;
+
     function drawBlock(x,y,z,color) {
         const key = `${x},${y},${z}`
         const blockTexture = new THREE.MeshStandardMaterial({color:color});
@@ -126,7 +165,9 @@ function init(){
                 break
             case 0x535864:
             case 0x49505B:
-                mainBlock.position.set(x,y-0.125,z)
+                mainBlock.position.set(x,y-0.06,z)
+                //here lets try to import a road texture 
+
                 break
             case 0x82F4FF:
             case 0x62D8FF:
@@ -173,7 +214,7 @@ function init(){
             }
         })
     }
-    //completely delete a block from the scene
+    //completely delete a block and decorations from the scene (rail, trees, ...)
     function removeBlock(x,y,z){
         const key = `${x},${y},${z}`
         if (objects.has(key)){
@@ -261,8 +302,7 @@ function init(){
                 case 2:
                     //road 
                     middleColor = 0x535864
-                    sideColor = 0x49505B
-                    //here lets try to import a road texture 
+                    sideColor = 0x49505B                    
                     break
                 case 3:
                     //water 
@@ -286,15 +326,28 @@ function init(){
             for (let k = 0;k<6;k++){
                 drawBlock(map.length-1,0,-(1 + k),sideColor)
                 drawBlock(map.length-1,0,list.length + k,sideColor)
-                switch (material) {
-                    case 1:
-                        drawTree(map.length-1,0,-(1 + k))
-                        drawTree(map.length-1,0,list.length + k)
-                        break
-                }
-                    
+                if (material == 1) {
+                    drawTree(map.length-1,0,-(1 + k))
+                    drawTree(map.length-1,0,list.length + k)
+                    }    
                 }
             }
+            //road properties : line on the road
+            if (map[map.length-2][0] == material && material == 2) {
+                for (var k = -5; k <= 21;k++){
+                    if (k%2 == 0) {
+                        drawLine(map.length-1.55,0.1,k)
+                    }
+                }
+            }
+            //draw the rail
+            if (material == 4) {
+                for(let k =0 ; k < 7; k++){
+                    //first pos is -4 and jump of 3
+                    drawRail(map.length-1,0,-4 + k*3)
+                
+                }
+            }            
         }
     
     //delete the map behind the chicken to avoid performance issues
@@ -413,6 +466,7 @@ function init(){
                 gsap.to(camera.position,{x:camera.position.x - 1,duration:0.2,ease:"power1.out"})
                 directionalLight.position.x --
                 target.position.x --
+                updateMap()
                 break
             case "d":
             case "ArrowRight":
