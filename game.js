@@ -44,6 +44,7 @@ let map = [
 let chicken;
 let chickenRAW
 let chickenBoxHelper;
+const logs = [];
 function init(){
 
     //lights
@@ -106,7 +107,7 @@ function init(){
         const key = `${x},${y},${z}`
         loader.load("/textures/railway.gltf",(gltf)=>{
             const rail = gltf.scene
-            rail.position.set(x,y,z )
+            rail.position.set(x,y,z)
             rail.scale.set(0.4,0.7,0.5)
             rail.traverse(child=>{
                 if (child.isMesh) {
@@ -132,7 +133,7 @@ function init(){
     function drawLine(x,y,z){
         const key = `${x},${y},${z}`
         const line = new THREE.Mesh(lineGeometry,lineMaterial)
-        line.position.set(x,y,z)
+        line.position.set(x-0.55,y+0.1,z)
         line.rotation.x = Math.PI/2
         scene.add(line)
         if (!objects.has(key)){
@@ -143,6 +144,34 @@ function init(){
         
     }
     
+    function drawLog(x,y,z,size){
+        const key = `${x},${y},${z}`
+        loader.load("/textures/LogWater_CrossyRoad.gltf",(gltf)=>{
+            const log = gltf.scene 
+            log.position.set(x,y-.25,z)
+            log.scale.set(0.25,0.25,size * (1/3)/2)
+            log.traverse(child=>{
+                if (child.isMesh) {
+                    log.receiveShadow = true
+                    log.castShadow = false
+                    if (child.material) {
+                        child.material.side = THREE.FrontSide
+                    }
+                }
+            })
+            //used to be removed later
+            if (!objects.has(key)) {
+                    //create an id in the map
+                    objects.set(key, [])
+            
+            }
+            objects.get(key).push(log)
+            logs.push(log)
+            scene.add(log)
+        })
+        
+    }
+
     //drawBlock func
     const blockGeo = new THREE.BoxGeometry(1,0.125,1)
     const dirtGeo = new THREE.BoxGeometry(1,0.125,1)
@@ -250,6 +279,14 @@ function init(){
     //build new terrain as the chicken is walking
     let currentChain = [false,0]
     function updateMap(){
+        //deleting all the updating elements from their array
+        logs.forEach((log,index)=>{
+            if (log.position.x <= chicken.position.x -5) {
+                scene.remove(log)
+                logs.splice(index,1)
+                console.log(logs)
+            }
+        })
         //if chicken is reaching the furthest point
         if (chicken.position.x > playerLastPosition) {
             playerLastPosition = chicken.position.x
@@ -292,62 +329,74 @@ function init(){
                 }
 
             }
+            let list = [0,0,0,0,0,0,0,0,0]
+            list = list.map(() => material)
+            map.push(list)
             let middleColor, sideColor;
             switch(material){
                 case 1:
                     //grass
                     middleColor = 0xBDF566
                     sideColor = 0x8EC045
+                    for (let k = 0;k<6;k++){
+                        drawTree(map.length-1,0,-(1 + k))
+                        drawTree(map.length-1,0,list.length + k)
+                        }
                     break
                 case 2:
                     //road 
                     middleColor = 0x535864
-                    sideColor = 0x49505B                    
+                    sideColor = 0x49505B   
+                    //road properties : line on the road
+                    if (map[map.length-2][0] == 2) {
+                        for (var k = -6; k <= 15;k++){
+                            if (k%2 == 0) {
+                                drawLine(map.length-1,0,k)
+                            }
+                        }
+                    }                 
                     break
                 case 3:
                     //water 
                     middleColor = 0x82F4FF
                     sideColor = 0x62D8FF
+                    //draw the log and lilyPad 
+                    //log
+                    let lastCoords = 0
+                    //random log amount (2-4)
+                    const randomAmount = Math.floor(Math.random()*3)+2
+                    for (let k = 1; k <= randomAmount ; k++){
+                        //random size (2-4)
+                        const randomSize = Math.floor(Math.random()*3)+2
+                        //z coord : allign to the map
+                        drawLog(map.length-1,0,lastCoords + (randomSize*0.5 - 0.5),randomSize)
+                        //gap of 1 and 3 between platforms
+                        lastCoords = lastCoords + randomSize + Math.floor(Math.random()*3)+1
+                    }
+                    //total length = 6 + 9 + 6 = 21, in coords : -6 --> 15
+                    
                     break
                 case 4:
                     //train 
                     middleColor = 0x121212
                     sideColor = 0x000000
+                    //draw the rail
+                    for(let k =0 ; k < 7; k++){
+                        //first pos is -4 and jump of 3
+                        drawRail(map.length-1,0,-4 + k*3)
+                        }
                     break
 
             }
-            let list = [0,0,0,0,0,0,0,0,0]
-            list = list.map(() => material)
-            map.push(list)
             list.forEach((elt,index)=>{
                 drawBlock(map.length-1,0,index,middleColor)
             })
             //now generate the sides of the map
             for (let k = 0;k<6;k++){
                 drawBlock(map.length-1,0,-(1 + k),sideColor)
-                drawBlock(map.length-1,0,list.length + k,sideColor)
-                if (material == 1) {
-                    drawTree(map.length-1,0,-(1 + k))
-                    drawTree(map.length-1,0,list.length + k)
-                    }    
+                drawBlock(map.length-1,0,list.length + k,sideColor)  
                 }
-            }
-            //road properties : line on the road
-            if (map[map.length-2][0] == material && material == 2) {
-                for (var k = -5; k <= 21;k++){
-                    if (k%2 == 0) {
-                        drawLine(map.length-1.55,0.1,k)
-                    }
-                }
-            }
-            //draw the rail
-            if (material == 4) {
-                for(let k =0 ; k < 7; k++){
-                    //first pos is -4 and jump of 3
-                    drawRail(map.length-1,0,-4 + k*3)
-                
-                }
-            }            
+            }        
         }
     
     //delete the map behind the chicken to avoid performance issues
@@ -370,7 +419,7 @@ function init(){
     }
     drawMap()
     drawSide()
-    //player : chicken ?
+    //player : chicken 
     chicken = new THREE.Object3D()
     loader.load("/textures/chicken.gltf",(gltf)=>{
         chickenRAW = gltf.scene
@@ -384,7 +433,7 @@ function init(){
             }
         })
         //relative position to the pivot
-        chickenRAW.position.set(0,0.2,-0.6)
+        chickenRAW.position.set(0,0,-0.6)
         chickenRAW.scale.set(0.3,0.3,0.3)
         chicken.add(chickenRAW)
         //init pos
@@ -504,6 +553,9 @@ function animate(){
         chickenBoxHelper.update()
     }
     */
+    logs.forEach(log=>{
+        
+    })
     renderer.render(scene,camera)
     stats.end()
 }
