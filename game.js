@@ -44,7 +44,7 @@ let map = [
 let chicken;
 let chickenRAW
 let chickenBoxHelper;
-const logs = [];
+let logs = new Map();
 function init(){
 
     //lights
@@ -76,7 +76,7 @@ function init(){
     function drawTree(x,y,z){
         //50 % chances of spawn to increase performance (very performance cost)
         if (Math.random().toFixed(2) <= 0.5) {
-            const key = `${x},${y},${z}`
+            const key = x
             const scaleY = Math.random()*0.1 + 0.2
             loader.load("/textures/tree.gltf",gltf=>{
                 const tree = gltf.scene
@@ -96,6 +96,7 @@ function init(){
                     //create an id in the map
                     objects.set(key, [])
                 }
+                
                 //and add the tree to this map id (same for all the others)
                 objects.get(key).push(tree)
                 scene.add(tree)
@@ -104,7 +105,7 @@ function init(){
     }
     //rail function
     function drawRail(x,y,z){
-        const key = `${x},${y},${z}`
+        const key = x
         loader.load("/textures/railway.gltf",(gltf)=>{
             const rail = gltf.scene
             rail.position.set(x,y,z)
@@ -131,7 +132,7 @@ function init(){
     const lineGeometry = new THREE.PlaneGeometry(0.15,1)
     const lineMaterial = new THREE.MeshBasicMaterial({color:0x909090,side:THREE.DoubleSide})
     function drawLine(x,y,z){
-        const key = `${x},${y},${z}`
+        const key = x
         const line = new THREE.Mesh(lineGeometry,lineMaterial)
         line.position.set(x-0.55,y+0.1,z)
         line.rotation.x = Math.PI/2
@@ -145,7 +146,7 @@ function init(){
     }
     
     function drawLog(x,y,z,size){
-        const key = `${x},${y},${z}`
+        const key = x
         loader.load("/textures/LogWater_CrossyRoad.gltf",(gltf)=>{
             const log = gltf.scene 
             log.position.set(x,y-.25,z)
@@ -165,8 +166,15 @@ function init(){
                     objects.set(key, [])
             
             }
+            if (!logs.has(key)) {
+                    let speed = (Math.floor(Math.random()*5))/100 + 0.01
+                    if (speed > 0.03) {
+                        speed = -speed / 2
+                    }
+                    logs.set(key,[speed])
+                }
+            logs.get(key).push(log)
             objects.get(key).push(log)
-            logs.push(log)
             scene.add(log)
         })
         
@@ -178,7 +186,7 @@ function init(){
     let dirtBlock;
 
     function drawBlock(x,y,z,color) {
-        const key = `${x},${y},${z}`
+        const key = x
         const blockTexture = new THREE.MeshStandardMaterial({color:color});
         const mainBlock = new THREE.Mesh(blockGeo,blockTexture)
         mainBlock.receiveShadow = true
@@ -229,24 +237,19 @@ function init(){
     }
     //initialise the side map, drawn usning the map list configuration
     function drawSide(){
-        map.forEach((lines,index)=>{
-            let type = lines[0]
-            switch(type){
-                case 1:
-                    for (let k = 0; k < 19;k++) {
-                        drawBlock(index,0, -(k + 1),0x8EC045)
-                        drawBlock(index,0,lines.length + k,0x8EC045)
-                        drawTree(index,0,lines.length + k)
-                        drawTree(index,0,-(k + 1))
-                    }
-                    break
+        map.forEach((lines,index)=>{    
+            for (let k = 0; k < 6;k++) {
+                drawBlock(index,0, -(k + 1),0x8EC045)
+                drawBlock(index,0,lines.length + k,0x8EC045)
+                drawTree(index,0,lines.length + k)
+                drawTree(index,0,-(k + 1))
             }
         })
     }
     //completely delete a block and decorations from the scene (rail, trees, ...)
-    function removeBlock(x,y,z){
-        const key = `${x},${y},${z}`
-        if (objects.has(key)){
+    function removeBlock(x){
+        const key = x
+        if (objects.has(x)){
                 const meshes = objects.get(key)
                 for (const mesh of meshes) {
                     scene.remove(mesh)
@@ -280,13 +283,6 @@ function init(){
     let currentChain = [false,0]
     function updateMap(){
         //deleting all the updating elements from their array
-        logs.forEach((log,index)=>{
-            if (log.position.x <= chicken.position.x -5) {
-                scene.remove(log)
-                logs.splice(index,1)
-                console.log(logs)
-            }
-        })
         //if chicken is reaching the furthest point
         if (chicken.position.x > playerLastPosition) {
             playerLastPosition = chicken.position.x
@@ -362,12 +358,12 @@ function init(){
                     sideColor = 0x62D8FF
                     //draw the log and lilyPad 
                     //log
-                    let lastCoords = 0
+                    let lastCoords = -3 + Math.floor(Math.random()*3) 
                     //random log amount (2-4)
                     const randomAmount = Math.floor(Math.random()*3)+2
                     for (let k = 1; k <= randomAmount ; k++){
                         //random size (2-4)
-                        const randomSize = Math.floor(Math.random()*3)+2
+                        const randomSize = Math.floor(Math.random()*2)+2
                         //z coord : allign to the map
                         drawLog(map.length-1,0,lastCoords + (randomSize*0.5 - 0.5),randomSize)
                         //gap of 1 and 3 between platforms
@@ -383,7 +379,7 @@ function init(){
                     //draw the rail
                     for(let k =0 ; k < 7; k++){
                         //first pos is -4 and jump of 3
-                        drawRail(map.length-1,0,-4 + k*3)
+                        drawRail(map.length-1,0,-5 + k*3)
                         }
                     break
 
@@ -409,9 +405,13 @@ function init(){
             if (list.length !== 0) {
                 //we empty this list
                 map[index] = []
+                //and the moving parts
+                if (logs.has(index)){
+                    logs.delete(index)
+                }
                 //remove the line
                 for (let k = 0; k < 19;k++) {
-                    removeBlock(index,0,-5+k)
+                    removeBlock(index,0,-6+k)
                 }
                 break; 
             }
@@ -553,9 +553,22 @@ function animate(){
         chickenBoxHelper.update()
     }
     */
-    logs.forEach(log=>{
+    
+    logs.forEach((logArray)=>{
+        //random positive/negative value betweem +- 0.05
         
+        const speed = logArray[0]
+        for (let k = 1; k < logArray.length; k ++ ) {
+            const log = logArray[k]
+            if (log.position.z < -6) {
+                log.position.z = 14
+            } else if (log.position.z > 15) {
+                log.position.z = -5  
+            } 
+            log.position.z += speed
+        }
     })
+    
     renderer.render(scene,camera)
     stats.end()
 }
