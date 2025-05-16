@@ -394,7 +394,6 @@ function init(){
                 }
             }        
         }
-    
     //delete the map behind the chicken to avoid performance issues
     function shiftMap(){
         //we scan the list
@@ -545,6 +544,34 @@ function init(){
 }   
 //animation
 init()
+function waterUpdate(x,z){
+        //this function check if the chicken is jumping in the water or on a log who's moving
+        //then allign this chicken to the log frame and align it back when it's comming back to the floor
+        if (logs.has(x)) {
+            const logList = logs.get(x)
+            const speed = logList[0]
+            logList.forEach((log,index)=>{
+                if (index !== 0) {
+                    const logZ = log.position.z
+                    //try to get logsize
+                    const box = new THREE.Box3().setFromObject(log);
+                    const size = new THREE.Vector3();
+                    box.getSize(size);
+                    const width = Number(size.z.toFixed(5))
+                    //if chicken is on the log
+                    if (chicken.position.z > logZ - width/2 && chicken.position.z < logZ + width/2) {
+                        console.log(true)
+                    } else {
+                        //to fix : retourne false pour les autres buches de la liste
+                        console.log(false)
+                    }
+                    
+                }
+            })
+            chicken.position.z += speed
+
+        }
+    }
 function animate(){
     stats.begin()
     //enable if needed
@@ -553,10 +580,8 @@ function animate(){
         chickenBoxHelper.update()
     }
     */
-    
     logs.forEach((logArray)=>{
         //random positive/negative value betweem +- 0.05
-        
         const speed = logArray[0]
         for (let k = 1; k < logArray.length; k ++ ) {
             const log = logArray[k]
@@ -568,7 +593,8 @@ function animate(){
             log.position.z += speed
         }
     })
-    
+    waterUpdate(chicken.position.x,chicken.position.z)
+
     renderer.render(scene,camera)
     stats.end()
 }
