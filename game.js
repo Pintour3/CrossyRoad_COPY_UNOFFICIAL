@@ -171,7 +171,9 @@ function init(){
             if (!logs.has(key)) {
                     let speed = (Math.floor(Math.random()*5))/100 + 0.01
                     if (speed > 0.03) {
-                        speed = -speed / 2
+                        speed = -speed / 3
+                    } else {
+                        speed = speed/3
                     }
                     logs.set(key,[speed])
                 }
@@ -483,6 +485,17 @@ function init(){
                 //reducing his size with a yoyo to make him compress and decompress
                 gsap.to(chicken.scale,{y:0.8,yoyo: true,repeat:1,duration:0.05,ease:"power1.inOut"})
                 //and tell you can move again
+                
+                if(!Number.isInteger(chicken.position.z)) {
+                    if (!logs.has(Math.round(chicken.position.x))) {
+                        let pos = Math.round(chicken.position.z)
+                        gsap.to(chicken.position,{
+                            z:pos,
+                            duration:0.05,
+                            ease:"power1.inOut"
+                        })
+                    }
+                }
                 isMooving = false 
             }
         })
@@ -555,17 +568,17 @@ let logSpeed = 0;
 let death = false;
 function waterUpdate(x,z){
         //this function check if the chicken is jumping in the water or on a log who's moving
-        //then allign this chicken to the log frame and align it back when it's comming back to the floor
         if (currentLog) {
             const logZ = currentLog.position.z
             const logX = currentLog.position.x
             const width = Number(logsize.z.toFixed(5))
             if (chicken.position.z > logZ - width/2 && chicken.position.z < logZ + width/2 && chicken.position.x == logX){
+                //mooving the chicken at the speed of the log
                 chicken.position.z += logSpeed
-                console.log("is on log")
+                console.log("on a log")
             } else {
-                currentLog = false
-                console.log("not on log anymore")
+                currentLog = false 
+                console.log("not on a log")
             } 
         } else if (logs.has(x)) {
         //if there is logs on the chicken line
@@ -580,22 +593,19 @@ function waterUpdate(x,z){
                 const box = new THREE.Box3().setFromObject(log);
                 logsize = new THREE.Vector3();
                 box.getSize(logsize);
-                const width = Number(logsize.z.toFixed(5))
+                const logWidth = Number(logsize.z.toFixed(5))
                 //if chicken is on one log of the list
-                if (chicken.position.z > logZ - width/2 && chicken.position.z < logZ + width/2) {
+                if (chicken.position.z > logZ - logWidth/2 && chicken.position.z < logZ + logWidth/2) {
                     //store the currentlog  
                     currentLog = log
                     dived = false
                     break
                 }  
             }
-            if (!dived) {
-                console.log("log")
-            } else {
-                console.log("dived")
+            if (dived) {
                 dead(1)
-            }
-        }
+            } 
+        } 
     }
 
 function dead(deadType){
