@@ -45,6 +45,8 @@ let chicken;
 let chickenRAW
 let chickenBoxHelper;
 let logs = new Map();
+
+let movementsVar;
 function init(){
 
     //lights
@@ -468,7 +470,7 @@ function init(){
 
     //movements
     let playerLastPosition = chicken.position.x
-    document.addEventListener("keydown",(event)=>{
+    movementsVar = function movements(event){
         let key = event.key
         //if he's currently moving, dont do anything
         if (isMooving) return;
@@ -539,38 +541,80 @@ function init(){
                 }
                 break
         }
-    })
-
+    }
+    document.addEventListener("keydown",movementsVar)
+    
+    
+    
 }   
 //animation
 init()
+let currentLog = false;
+let logsize = 0;
+let logSpeed = 0;
+let death = false;
 function waterUpdate(x,z){
         //this function check if the chicken is jumping in the water or on a log who's moving
         //then allign this chicken to the log frame and align it back when it's comming back to the floor
-        if (logs.has(x)) {
+        if (currentLog) {
+            const logZ = currentLog.position.z
+            const logX = currentLog.position.x
+            const width = Number(logsize.z.toFixed(5))
+            if (chicken.position.z > logZ - width/2 && chicken.position.z < logZ + width/2 && chicken.position.x == logX){
+                chicken.position.z += logSpeed
+                console.log("is on log")
+            } else {
+                currentLog = false
+                console.log("not on log anymore")
+            } 
+        } else if (logs.has(x)) {
+        //if there is logs on the chicken line
+            let dived = true
             const logList = logs.get(x)
-            const speed = logList[0]
-            logList.forEach((log,index)=>{
-                if (index !== 0) {
-                    const logZ = log.position.z
-                    //try to get logsize
-                    const box = new THREE.Box3().setFromObject(log);
-                    const size = new THREE.Vector3();
-                    box.getSize(size);
-                    const width = Number(size.z.toFixed(5))
-                    //if chicken is on the log
-                    if (chicken.position.z > logZ - width/2 && chicken.position.z < logZ + width/2) {
-                        console.log(true)
-                    } else {
-                        //to fix : retourne false pour les autres buches de la liste
-                        console.log(false)
-                    }
-                    
-                }
-            })
-            chicken.position.z += speed
-
+            logSpeed = logList[0]
+            //get all individual logs
+            for (let index = 1; index < logList.length;index ++) {
+                const log = logList[index]
+                const logZ = log.position.z
+                //try to get logsize
+                const box = new THREE.Box3().setFromObject(log);
+                logsize = new THREE.Vector3();
+                box.getSize(logsize);
+                const width = Number(logsize.z.toFixed(5))
+                //if chicken is on one log of the list
+                if (chicken.position.z > logZ - width/2 && chicken.position.z < logZ + width/2) {
+                    //store the currentlog  
+                    currentLog = log
+                    dived = false
+                    break
+                }  
+            }
+            if (!dived) {
+                console.log("log")
+            } else {
+                console.log("dived")
+                dead(1)
+            }
         }
+    }
+
+function dead(deadType){
+        //deadType : 1 = drowned, 2 = run over by a vehicle (train, car, truck), 3 = too slow, eaten by the bird
+        switch (deadType) {
+            case 1:
+                death = true
+                document.removeEventListener("keydown",movementsVar)
+                gsap.to(chicken.position,{
+                    y:chicken.position.y - 1.5,
+                    duration: 0.3,
+                    ease:"power1.inOut"
+                })
+                break
+            case 2:
+                break
+            case 3: 
+                break
+        }    
     }
 function animate(){
     stats.begin()
@@ -593,7 +637,9 @@ function animate(){
             log.position.z += speed
         }
     })
-    waterUpdate(chicken.position.x,chicken.position.z)
+    if (!death){
+        waterUpdate(chicken.position.x,chicken.position.z)
+    }
 
     renderer.render(scene,camera)
     stats.end()
