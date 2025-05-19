@@ -146,7 +146,30 @@ function init(){
         objects.get(key).push(line)
         
     }
-    
+    function drawVehicle(x,y,z,type){
+        const key = x 
+        let path;
+        switch (type){
+            case "truck":
+            path = "/textures/truck_CrossyRoad.gltf"
+        }
+        loader.load(path,(gltf)=>{
+            const vehicle = gltf.scene
+            vehicle.position.set(x,y,z)
+            vehicle.scale.set(0.15,0.15,0.15)
+            vehicle.traverse(child=>{
+                if(child.isMesh){
+                    vehicle.receiveShadow = true
+                    vehicle.castShadow = true
+                    if (child.material){
+                        child.material.side = THREE.FrontSide
+                    }
+                }
+            })
+            scene.add(vehicle)
+        })
+    }
+    drawVehicle(5,0,5,"truck")
     function drawLog(x,y,z,size){
         const key = x
         loader.load("/textures/LogWater_CrossyRoad.gltf",(gltf)=>{
@@ -354,7 +377,21 @@ function init(){
                                 drawLine(map.length-1,0,k)
                             }
                         }
-                    }                 
+                    }     
+                    //then : car and trucks on the road   
+                    //to do !!
+                    /* 
+                    let lastVehicleCords = -3 + Math.floor(Math.random()*3) 
+                    //random vehicle amount (2-4)
+                    const vehicleAmount = Math.floor(Math.random()*3)+2
+                    for (let k = 1; k <= vehicleAmount ; k++){
+                        //vehicle
+                        const randomSize = Math.floor(Math.random()*2)+2
+                        //z coord : allign to the map
+                        drawLog(map.length-1,0,lastCoords + (randomSize*0.5 - 0.5),randomSize)
+                        //gap of 1 and 3 between platforms
+                        lastCoords = lastCoords + randomSize + Math.floor(Math.random()*3)+1
+                    } */
                     break
                 case 3:
                     //water 
@@ -484,8 +521,7 @@ function init(){
             onComplete:()=>{
                 //reducing his size with a yoyo to make him compress and decompress
                 gsap.to(chicken.scale,{y:0.8,yoyo: true,repeat:1,duration:0.05,ease:"power1.inOut"})
-                //and tell you can move again
-                
+                //fixing the gap of the chicken
                 if(!Number.isInteger(chicken.position.z)) {
                     if (!logs.has(Math.round(chicken.position.x))) {
                         let pos = Math.round(chicken.position.z)
@@ -496,6 +532,7 @@ function init(){
                         })
                     }
                 }
+                //and tell you can move again
                 isMooving = false 
             }
         })
