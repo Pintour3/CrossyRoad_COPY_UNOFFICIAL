@@ -7,7 +7,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(65,window.innerWidth/window.innerHeight,0.1,1000)
 camera.position.set(4.2,4.2,4.35)
 
-//3D loader
+//3D loader files
 const loader = new GLTFLoader();
 
 //render
@@ -155,7 +155,7 @@ function init(){
         }
         loader.load(path,(gltf)=>{
             const vehicle = gltf.scene
-            vehicle.position.set(x,y,z)
+            vehicle.position.set(x,y,z-.2)
             vehicle.scale.set(0.15,0.15,0.15)
             vehicle.traverse(child=>{
                 if(child.isMesh){
@@ -169,7 +169,7 @@ function init(){
             scene.add(vehicle)
         })
     }
-    drawVehicle(5,0,5,"truck")
+    drawVehicle(6,0,4,"truck")
     function drawLog(x,y,z,size){
         const key = x
         loader.load("/textures/LogWater_CrossyRoad.gltf",(gltf)=>{
